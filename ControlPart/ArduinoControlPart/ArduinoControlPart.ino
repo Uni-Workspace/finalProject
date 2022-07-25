@@ -2,6 +2,12 @@
 Servo servoX; 
 Servo servoY; 
 
+int lastPosX = 90;
+int lastPosY = 60;
+
+int tempX=0;
+int tempY=0;
+
 struct retVals {        // Declare a local structure 
     int i1, i2;
   };
@@ -21,8 +27,8 @@ void setup() {
   servoX.attach(9);
   servoY.attach(10);
   
-  servoX.write(0);
-  servoY.write(0);
+  servoX.write(90);
+  servoY.write(60);
 
   Serial.begin(115200);
 }
@@ -30,9 +36,23 @@ void setup() {
 void loop() {
   if (Serial.available() > 0){
     String data = Serial.readStringUntil(33);
-    auto [posX , posY] = retXY(data);
-    servoX.write(posX);
-    servoY.write(posY);
+    auto [deltaX , deltaY] = retXY(data);
+    
+    if (deltaX != tempX){
+      int cmdX = lastPosX + deltaX ;
+      lastPosX = cmdX;
+      servoX.write(cmdX);
+      tempX = deltaX ;
+      }
+
+    
+    if (deltaY != tempY){
+      int cmdY = lastPosY + deltaY ;
+      lastPosY = cmdY;
+      servoY.write(cmdY);
+      tempY = deltaY ;
+      }
+      
     Serial.read();
   }
 }
