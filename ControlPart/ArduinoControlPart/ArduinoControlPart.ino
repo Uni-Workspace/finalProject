@@ -2,8 +2,8 @@
 Servo servoX; 
 Servo servoY; 
 
-int lastPosX = 90;
-int lastPosY = 60;
+int lastPosX = 84;
+int lastPosY = 84;
 
 int tempX=0;
 int tempY=0;
@@ -27,8 +27,8 @@ void setup() {
   servoX.attach(9);
   servoY.attach(10);
   
-  servoX.write(90);
-  servoY.write(60);
+  servoX.write(84);
+  servoY.write(84);
 
   Serial.begin(115200);
 }
