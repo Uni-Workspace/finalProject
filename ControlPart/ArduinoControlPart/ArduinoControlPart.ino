@@ -1,6 +1,11 @@
 #include <Servo.h>
-Servo servoX; 
-Servo servoY; 
+#include "ServoEasing.hpp"
+
+ServoEasing servoX; 
+ServoEasing servoY; 
+
+int servoX_speed = 90;
+int servoY_speed = 90;
 
 int lastPosX = 84;
 int lastPosY = 84;
@@ -24,11 +29,11 @@ retVals retXY(String data) {
 
 void setup() {
   // put your setup code here, to run once:
-  servoX.attach(9);
-  servoY.attach(10);
+  servoX.attach(9, 84);
+  servoY.attach(10, 84);
   
-  servoX.write(84);
-  servoY.write(84);
+  servoX.easeTo(84);
+  servoY.easeTo(84);
 
   Serial.begin(115200);
 }
@@ -41,7 +46,7 @@ void loop() {
     if (deltaX != tempX){
       int cmdX = lastPosX + deltaX ;
       lastPosX = cmdX;
-      servoX.write(cmdX);
+      servoX.easeTo(cmdX, servoX_speed);
       tempX = deltaX ;
       }
 
@@ -49,7 +54,7 @@ void loop() {
     if (deltaY != tempY){
       int cmdY = lastPosY + deltaY ;
       lastPosY = cmdY;
-      servoY.write(cmdY);
+      servoY.easeTo(cmdY, servoY_speed);
       tempY = deltaY ;
       }
       
