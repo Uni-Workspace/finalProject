@@ -10,7 +10,7 @@ server_socket = socket.socket()  # get instance
 server_socket.bind((host, port))  # bind host address and port together
 
 # configure how many client the server can listen simultaneously
-server_socket.listen(2)
+server_socket.listen(1)
 conn, address = server_socket.accept()  # accept new connection
 print("Connection from: " + str(address))
 #================================================================Server===================================
@@ -33,7 +33,6 @@ def detect_idx(outputs, REC_center):
     return idx
 
 
-import socket
 UDP_IP, UDP_PORT = "127.0.0.1", 8888
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP

@@ -43,6 +43,21 @@ from strong_sort.strong_sort import StrongSORT
 # remove duplicated stream handler to avoid duplicated logging
 logging.getLogger().removeHandler(logging.getLogger().handlers[0])
 
+UDP_IP, UDP_PORT = "127.0.0.1", 8888
+sock = socket.socket(socket.AF_INET, # Internet
+                     socket.SOCK_DGRAM) # UDP
+
+def send_data(det_output):
+    bbox_w = det_output[2] - det_output[0]
+    bbox_h = det_output[3] - det_output[1]
+    center = [det_output[0] + bbox_w/2, det_output[1]+bbox_h/2]
+    center[0], center[1] = center[0]/640, center[1]/480
+    x = str(center[0])[2:4]
+    y = str(center[1])[2:4]
+    MESSAGE_s = x + "," + y
+    print(MESSAGE_s)
+    MESSAGE = MESSAGE_s.encode()
+    sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 
 @torch.no_grad()
 def run(
@@ -240,7 +255,7 @@ def run(
                         cls = output[5]
 
                         if id == selectedID:
-                            pass
+                            send_data(output)
                             if save_txt:
                                 # to MOT format
                                 bbox_left = output[0]
