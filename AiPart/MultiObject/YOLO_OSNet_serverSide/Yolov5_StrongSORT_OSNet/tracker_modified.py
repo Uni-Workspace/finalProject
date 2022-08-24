@@ -1,19 +1,71 @@
 import argparse
-from cmath import sqrt
+import cv2
+import numpy as np
 #================================================================Server====================================
 import socket
+
 host = "172.18.227.249"
-port = 5000  # initiate port no above 1024
+port = 5000 
 
-server_socket = socket.socket()  # get instance
-# look closely. The bind() function takes tuple as argument
-server_socket.bind((host, port))  # bind host address and port together
+server_socket = socket.socket()  
+server_socket.bind((host, port))  
 
-# configure how many client the server can listen simultaneously
 server_socket.listen(1)
-conn, address = server_socket.accept()  # accept new connection
+conn, address = server_socket.accept() 
 print("Connection from: " + str(address))
 #================================================================Server===================================
+
+#===========================================================Cameras Calibration============================
+def estimateOffset(client_x, client_y, server_x, server_y):
+    offset_x = client_x - server_x
+    offset_y = client_y - server_y
+    return offset_x, offset_y
+
+
+clientCamera_center = conn.recv(20).decode()
+clientCamera_center = clientCamera_center.split(",")
+cameraClient_x = int(clientCamera_center[0])
+cameraClient_y = int(clientCamera_center[1])
+
+cap = cv2.VideoCapture(0)
+while cap.isOpened():
+    ret , frame = cap.read()
+    image = frame.copy()
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    lower_red = np.array([135, 0, 0], dtype="uint8")
+    upper_red = np.array([255, 85, 85], dtype="uint8")
+
+    mask = cv2.inRange(image, lower_red, upper_red)
+    edged = cv2.Canny(mask, 200, 255)
+    contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cv2.drawContours(image, contours, 0, (0,0,0), 1)
+
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    if len(contours)>0:
+        red_area = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(red_area)
+        cameraServer_x , cameraServer_y = x+(w/2) , y+(h/2)
+        cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,0), 2)
+        cv2.imshow("Rected Image", image)
+
+    key = cv2.waitKey(0)
+    if key == ord('s'):
+        pass # TODO : Do the Calibration Method
+        offset_x, offset_y = estimateOffset(cameraClient_x, cameraClient_y, cameraServer_x, cameraServer_y)
+        break
+    elif key == ord('r'):
+        continue
+    elif key == ord('q'):
+        cv2.destroyAllWindows()
+        cap.release()
+        exit()
+
+cv2.destroyAllWindows()
+cap.release()
+#===========================================================Camera Calibration============================
+
 
 # REC_num_targets, REC_center = 2, [50,50]
 def detect_idx(outputs, REC_center):
@@ -25,8 +77,8 @@ def detect_idx(outputs, REC_center):
         center[0], center[1] = center[0]/640, center[1]/480
         x = int(str(center[0])[2:4])
         y = int(str(center[1])[2:4])
-        # dist_vector[i] = np.sqrt((x - REC_center[0])**2 + (y - REC_center[1])**2)
-        dist_vector[i] = np.sqrt((x - REC_center[0])**2)
+        dist_vector[i] = np.sqrt((x - REC_center[0])**2 + (y - REC_center[1])**2)
+        # dist_vector[i] = np.sqrt((x - REC_center[0])**2)
     result = np.where(dist_vector == np.amin(dist_vector))
     result = result[0][0]
     idx = outputs[0][result][4]
@@ -192,10 +244,10 @@ def run(
     #=====================================================REC=============================================================
     data = conn.recv(16).decode()
     if data:
-        # if data is not received break
-        print("from connected user: " + str(data))
+        # if data is not received, breaks
+        print("From connected user: " + str(data))
         data = data.strip('][').split(', ')
-        REC_center = (int(data[0]), int(data[1]))
+        REC_center = (int(data[0])-offset_x , int(data[1])-offset_y)
         REC_num_targets = int(data[2])
     #=====================================================REC=============================================================
     for frame_idx, (path, im, im0s, vid_cap, s) in enumerate(dataset):

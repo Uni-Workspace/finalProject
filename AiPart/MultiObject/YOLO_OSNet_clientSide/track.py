@@ -1,10 +1,76 @@
-import pickle, time, datetime
-from tkinter.tix import Select
 from click_event import click_event
+
+#===========================================================Cameras Calibration============================
+import cv2
+import numpy as np
+
+def sendOffset(client_x, client_y):
+    host = "172.18.227.249"
+    port = 5000
+    client_socket = socket.socket()
+    data = f"{client_x},{client_y}"
+    try:
+        client_socket.connect((host, port))
+        client_socket.send(data.encode())
+        client_socket.close()
+        return True
+    except:
+        return False
+
+cap = cv2.VideoCapture(0)
+while cap.isOpened():
+    ret , frame = cap.read()
+    image = frame.copy()
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    lower_red = np.array([135, 0, 0], dtype="uint8")
+    upper_red = np.array([255, 85, 85], dtype="uint8")
+
+    mask = cv2.inRange(image, lower_red, upper_red)
+    edged = cv2.Canny(mask, 200, 255)
+    contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    cv2.drawContours(image, contours, 0, (0,0,0), 1)
+
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    if len(contours)>0:
+        red_area = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(red_area)
+        cameraClient_x , cameraClient_y = x+(w/2) , y+(h/2)
+        cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,0), 2)
+        cv2.imshow("Rected Image", image)
+
+    key = cv2.waitKey(0)
+    if key == ord('s'):
+        print("Sending Offset to the Server---------------")
+        status = sendOffset(cameraClient_x, cameraClient_y)
+        if status:
+            print(">>>>>>" , "Offset Sent Successfully")
+            print("---------------------------------------")
+            break
+        else:
+            print(">>>>>>" , "Offset Send Failed. Try again in following frames...")
+            print("---------------------------------------")
+            continue
+
+    elif key == ord('r'):
+        continue
+    elif key == ord('q'):
+        cv2.destroyAllWindows()
+        cap.release()
+        exit()
+
+cv2.destroyAllWindows()
+cap.release()
+#===========================================================Camera Calibration============================
+
+
+
+
+
 import socket
 
-
-click_X, click_Y, Selection, Index = None, None, False, False
+click_X, click_Y, Selection = None, None, False,
 
 import argparse
 import os
@@ -57,14 +123,10 @@ logging.getLogger().removeHandler(logging.getLogger().handlers[0])
 def click_event(event, x, y, flag, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         print(f"Clicked on : {x},{y}")
-        global click_X, click_Y, Selection, Index
+        global click_X, click_Y, Selection
         click_Y = y
         click_X = x
         Selection = True
-        print("ooooooooooooooooo")
-        print(Selection)
-        print(Index)
-        print("ooooooooooooooooo")
 # ==========================================
 
 

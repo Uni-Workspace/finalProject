@@ -51,7 +51,7 @@ class Tracker:
         self.ema_alpha = ema_alpha
         self.mc_lambda = mc_lambda
 
-        # host = socket.gethostname()
+        # self.host = socket.gethostname()
         self.host = "172.18.227.249"
         self.port = 5000
         self.client_socket = socket.socket()
@@ -176,7 +176,7 @@ class Tracker:
                     try:
                         print(f"Selected Object ID : {selectedObjectId}")
                     except:
-                        print("No ID")
+                        print("No ID Found")
                     print("The selected box width range: ", end="")
                     print((x_center + (detection.tlwh[2]/2) , x_center - (detection.tlwh[2]/2))) # width range
                     print("The selected box height range: ", end="")
@@ -184,18 +184,13 @@ class Tracker:
                     print(f"Clicked On x={click_x}, y={click_y}") # Click Coor : (x,y)
                     print("===================================================")
                     
-                    print(detection.feature)
-                    print(detection.feature.shape)
-
                     data = f"{list(detection.feature)}"
-                    # 
-                    # data = f"{list(detection.feature)}"
-
+                
                     # Sending data to the listening server===================================================
                     # host = socket.gethostname()
-                    host = "172.18.227.249"
-                    port = 5000
-                    client_socket = socket.socket()
+                    # host = "172.18.227.249"
+                    # port = 5000
+                    # client_socket = socket.socket()
                     self.client_socket.connect((self.host, self.port))
                     self.client_socket.send(data.encode())
                     self.client_socket.close()

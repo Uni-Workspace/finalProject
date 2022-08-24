@@ -10,8 +10,8 @@ from . import iou_matching
 from .track import Track
 import socket
 import json
-prev_click_X, prev_click_Y = None, None
 
+prev_click_X, prev_click_Y = None, None
 
 class Tracker:
     # global Selection2
@@ -53,10 +53,10 @@ class Tracker:
         self.mc_lambda = mc_lambda
 
 
+        # self.host = socket.gethostname()
         self.host = "172.18.227.249"
-        self.port = 5000  # socket server port numbe
-        self.client_socket = socket.socket()  # instantiate
-        self.client_socket.connect((self.host, self.port))  # connect to the server
+        self.port = 5000
+        self.client_socket = socket.socket()
 
         self.kf = kalman_filter.KalmanFilter()
         self.tracks = []
@@ -156,98 +156,52 @@ class Tracker:
         return cost_matrix
     
     def selectTarget(self, features, detections, ACCURACY=1, click_x=None, click_y=None):
-
+        global prev_click_X, prev_click_Y
         for detection in detections:
             x_center = detection.tlwh[0] + (detection.tlwh[2]/2)
             y_center = detection.tlwh[1] + (detection.tlwh[3]/2)
             if click_x <= (x_center + (detection.tlwh[2]/2)) and click_x >= ((x_center - (detection.tlwh[2]/2))):
                 if click_y <= (y_center + (detection.tlwh[3]/2)) and click_y >= ((y_center - (detection.tlwh[3]/2))):
-                    print('In a Box.....................')
-                    print((x_center + (detection.tlwh[2]/2) , x_center - (detection.tlwh[2]/2)))
-                    print((y_center + (detection.tlwh[3]/2) , y_center - (detection.tlwh[3]/2)))
-                    print(click_x)
-                    print(click_y)
-                    print(".............................")
-                    # print(detection.feature)
-                    data = f"{[int((x_center/640)*100) , int((y_center/480)*100), len(detections)]}"
-                    print("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
-                    print(data)
-                    # host = socket.gethostname()
-                    # host = "172.18.227.249"
-                    # port = 5000  # socket server port numbe
-                    # client_socket = socket.socket()  # instantiate
-                    # self.client_socket.connect((self.host, self.port))  # connect to the server
-                    self.client_socket.send(data.encode())
-                    # client_socket.close()
-                    print("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")
+                    
+                    # To fetch the ID of the selected object==============in case of your need=================
                     kf = kalman_filter.KalmanFilter()
                     mean, covariance = kf.initiate(detection.to_xyah())
                     for track in self.tracks:
-                        print("OOOOOOOOOOOOOOOOOOOOOOOOOO")
-                        # print(np.mean(list(track.mean)))
-                        # print("--------------------------")
-                        # print(np.mean(list(mean)))
-                        print("OOOOOOOOOOOOOOOOOOOOOOOOOO")
-                        if abs( np.mean(list(track.mean)) - np.mean(list(mean)) )< ACCURACY:
-                            print(f"ID {track.track_id} is Selected.........")
-                            # host = socket.gethostname()  # as both code is running on same pc
-                            # port = 5000  # socket server port numbe
-                            # client_socket = socket.socket()  # instantiate
-                            # client_socket.connect((host, port))  # connect to the server
-                            print(">>>>>>>>>", type(detection.feature))
-                            print(">>>>>>>>>", detection.feature.shape)
-                            
-                            # data = {
-                            #     "key" : list(detection.feature),
-                            # }
-                            # data = json.dumps(data)
-                            # client_socket.send(f"{list(detection.feature)}".encode())
+                        if abs( np.mean(list(track.mean)) - np.mean(list(mean)) ) < ACCURACY:
+                            selectedObjectId = track.track_id
+                            print(f"ID {selectedObjectId} is Selected")
                             break
+                    # =========================================================================================
+                    
+                    print('Clicked within the box:============================')
+                    try:
+                        print(f"Selected Object ID : {selectedObjectId}")
+                    except:
+                        print("No ID Found")
+                    print("The selected box width range: ", end="")
+                    print((x_center + (detection.tlwh[2]/2) , x_center - (detection.tlwh[2]/2))) # width range
+                    print("The selected box height range: ", end="")
+                    print((y_center + (detection.tlwh[3]/2) , y_center - (detection.tlwh[3]/2))) # height range
+                    print(f"Clicked On x={click_x}, y={click_y}") # Click Coor : (x,y)
+                    print("===================================================")
+
+                    data = f"{[int((x_center/640)*100) , int((y_center/480)*100), len(detections)]}"
+                    
+                    # Sending data to the listening server===================================================
+                    # host = socket.gethostname()
+                    # host = "172.18.227.249"
+                    # port = 5000
+                    # client_socket = socket.socket()
+                    self.client_socket.connect((self.host, self.port))
+                    self.client_socket.send(data.encode())
+                    self.client_socket.close()
+                    print(">>>>>>>>" , "Coordination Sent.")
+                    print("-----------------------------")
+                    # =======================================================================================
                     break
+
         prev_click_X = click_x
         prev_click_Y = click_y
-        
-
-        
-        def gated_metric(tracks, dets, track_indices, detection_indices):
-            features = np.array([dets[i].feature for i in detection_indices])
-            targets = np.array([tracks[i].track_id for i in track_indices])
-            cost_matrix = self.metric.distance(features, targets)
-            cost_matrix = linear_assignment.gate_cost_matrix(cost_matrix, tracks, dets, track_indices, detection_indices)
-
-            # print("*****************************")
-            # print("*****************************")
-            # print("*****************************")
-            # print(cost_matrix.shape)
-            # print(cost_matrix)
-            for cost in cost_matrix:
-                print(cost, end=",")
-            selection = np.where(cost_matrix<=ACCURACY)
-            if np.count_nonzero(selection) != 2:
-                # TODO : handle the non Desired result of comparison
-                pass
-            # print("*****************************")
-            # print("*****************************")
-            # print("*****************************")
-
-            return cost_matrix
-
-        # Split track set into confirmed and unconfirmed tracks.
-        confirmed_tracks = [
-            i for i, t in enumerate(self.tracks) if t.is_confirmed()]
-        unconfirmed_tracks = [
-            i for i, t in enumerate(self.tracks) if not t.is_confirmed()]
-
-        # Associate confirmed tracks using appearance features
-        matches_a, unmatched_tracks_a, unmatched_detections = \
-            linear_assignment.matching_cascade(
-                gated_metric, self.metric.matching_threshold, self.max_age,
-                self.tracks, detections, confirmed_tracks)
-        
-        matches = matches_a
-        unmatched_tracks = list(set(unmatched_tracks_a))
-        
-        pass
 
     def _match(self, detections):
 
@@ -259,12 +213,6 @@ class Tracker:
             targets = np.array([tracks[i].track_id for i in track_indices])
             cost_matrix = self.metric.distance(features, targets)
             cost_matrix = linear_assignment.gate_cost_matrix(cost_matrix, tracks, dets, track_indices, detection_indices)
-
-            print("!!!!!!!!!!!!!!!!!!!!!")
-            # print(features)
-            print(targets)
-            print(cost_matrix)
-            print("!!!!!!!!!!!!!!!!!!!!!")
 
             return cost_matrix
 
@@ -298,19 +246,15 @@ class Tracker:
         return matches, unmatched_tracks, unmatched_detections
 
     def _initiate_track(self, detection, class_id, conf):
-        print("/\/\/\/\/\/\//\/\/\/\/\/\//\/\/\/\/\/\//\/\/\/\/\/\//\/\/\/\/\/\/ ")
-        print(detection.tlwh)
+        print("A new Track has been initiated with following information:============")
+        print(f"ID = {self._next_id}")
+        print("(topLeft_x, topLeft_y, width, height)=" , (detection.tlwh[0] , detection.tlwh[1] , detection.tlwh[2] , detection.tlwh[3]) ) 
         x_center = detection.tlwh[0] + (detection.tlwh[2]/2)
         y_center = detection.tlwh[1] + (detection.tlwh[3]/2)
-        print(f"CENTER : {(x_center,y_center)}")
+        print(f"CENTER (x,y)={(x_center,y_center)}")
         print(f"CONFIDENCE : {detection.confidence}")
         print("")
-        print(detection.feature)
-        print(type(detection.feature))
-        print(detection.feature.shape)
-        print(detection.feature.mean())
-        print(f"ID = {self._next_id}")
-        print("\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/")
+        print("======================================================================")
         self.tracks.append(Track(
             detection.to_xyah(), self._next_id, class_id, conf, self.n_init, self.max_age, self.ema_alpha,
             detection.feature))
