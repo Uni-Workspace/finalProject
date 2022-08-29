@@ -6,11 +6,11 @@ from utils.datasets import LoadStreams
 from utils.plots import plot_one_box
 from utils.general import scale_coords, xyxy2xywh, non_max_suppression
 
-UDP_IP, UDP_PORT = "172.17.222.162", 8888
+UDP_IP, UDP_PORT = "127.0.0.1", 8888
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
 
-weights, device ='yolov5m.pt', "cpu"
+weights, device ='face_detection.pt', "cpu"
 model = attempt_load(weights, map_location=device)
 
 source, imgsz, stride = "0", 416, 64

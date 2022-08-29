@@ -52,7 +52,7 @@ class Tracker:
         self.mc_lambda = mc_lambda
 
         # self.host = socket.gethostname()
-        self.host = "172.17.222.161"
+        self.host = "172.18.227.249"
         self.port = 5000
         self.client_socket = socket.socket()
 
