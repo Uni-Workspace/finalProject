@@ -1,5 +1,3 @@
-from click_event import click_event
-
 #===========================================================Cameras Calibration============================
 import cv2
 import numpy as np
@@ -17,51 +15,51 @@ def sendOffset(client_x, client_y):
     except:
         return False
 
-cap = cv2.VideoCapture(0)
-while cap.isOpened():
-    ret , frame = cap.read()
-    image = frame.copy()
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+# cap = cv2.VideoCapture(0)
+# while cap.isOpened():
+#     ret , frame = cap.read()
+#     image = frame.copy()
+#     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    lower_red = np.array([135, 0, 0], dtype="uint8")
-    upper_red = np.array([255, 85, 85], dtype="uint8")
+#     lower_red = np.array([135, 0, 0], dtype="uint8")
+#     upper_red = np.array([255, 85, 85], dtype="uint8")
 
-    mask = cv2.inRange(image, lower_red, upper_red)
-    edged = cv2.Canny(mask, 200, 255)
-    contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#     mask = cv2.inRange(image, lower_red, upper_red)
+#     edged = cv2.Canny(mask, 200, 255)
+#     contours, hierarchy = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    cv2.drawContours(image, contours, 0, (0,0,0), 1)
+#     cv2.drawContours(image, contours, 0, (0,0,0), 1)
 
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    if len(contours)>0:
-        red_area = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(red_area)
-        cameraClient_x , cameraClient_y = x+(w/2) , y+(h/2)
-        cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,0), 2)
-        cv2.imshow("Rected Image", image)
+#     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+#     if len(contours)>0:
+#         red_area = max(contours, key=cv2.contourArea)
+#         x, y, w, h = cv2.boundingRect(red_area)
+#         cameraClient_x , cameraClient_y = x+(w/2) , y+(h/2)
+#         cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,0), 2)
+#         cv2.imshow("Rected Image", image)
 
-    key = cv2.waitKey(0)
-    if key == ord('s'):
-        print("Sending Offset to the Server---------------")
-        status = sendOffset(cameraClient_x, cameraClient_y)
-        if status:
-            print(">>>>>>" , "Offset Sent Successfully")
-            print("---------------------------------------")
-            break
-        else:
-            print(">>>>>>" , "Offset Send Failed. Try again in following frames...")
-            print("---------------------------------------")
-            continue
+#     key = cv2.waitKey(0)
+#     if key == ord('s'):
+#         print("Sending Offset to the Server---------------")
+#         status = sendOffset(cameraClient_x, cameraClient_y)
+#         if status:
+#             print(">>>>>>" , "Offset Sent Successfully")
+#             print("---------------------------------------")
+#             break
+#         else:
+#             print(">>>>>>" , "Offset Send Failed. Try again in following frames...")
+#             print("---------------------------------------")
+#             continue
 
-    elif key == ord('r'):
-        continue
-    elif key == ord('q'):
-        cv2.destroyAllWindows()
-        cap.release()
-        exit()
+#     elif key == ord('r'):
+#         continue
+#     elif key == ord('q'):
+#         cv2.destroyAllWindows()
+#         cap.release()
+#         exit()
 
-cv2.destroyAllWindows()
-cap.release()
+# cv2.destroyAllWindows()
+# cap.release()
 #===========================================================Camera Calibration============================
 
 

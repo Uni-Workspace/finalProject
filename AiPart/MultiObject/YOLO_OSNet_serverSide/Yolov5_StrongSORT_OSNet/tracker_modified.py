@@ -4,7 +4,7 @@ import numpy as np
 #================================================================Server====================================
 import socket
 
-host = "172.18.227.249"
+host = "172.17.222.161"
 port = 5000 
 
 server_socket = socket.socket()  
@@ -24,10 +24,12 @@ def estimateOffset(client_x, client_y, server_x, server_y):
 
 clientCamera_center = conn.recv(20).decode()
 clientCamera_center = clientCamera_center.split(",")
-cameraClient_x = int(clientCamera_center[0])
-cameraClient_y = int(clientCamera_center[1])
+print(clientCamera_center)
+print(type(clientCamera_center))
+cameraClient_x = int(float(clientCamera_center[0]))
+cameraClient_y = int(float(clientCamera_center[1]))
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 while cap.isOpened():
     ret , frame = cap.read()
     image = frame.copy()
@@ -48,12 +50,15 @@ while cap.isOpened():
         x, y, w, h = cv2.boundingRect(red_area)
         cameraServer_x , cameraServer_y = x+(w/2) , y+(h/2)
         cv2.rectangle(image, (x,y), (x+w,y+h), (0,0,0), 2)
+        # cv2.putText(image, str((cameraServer_x, cameraServer_y)), (x,y), cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,0),2,cv2.LINE_AA)
         cv2.imshow("Rected Image", image)
 
     key = cv2.waitKey(0)
     if key == ord('s'):
         pass # TODO : Do the Calibration Method
         offset_x, offset_y = estimateOffset(cameraClient_x, cameraClient_y, cameraServer_x, cameraServer_y)
+        print(cameraServer_x)
+        print(cameraServer_y)
         break
     elif key == ord('r'):
         continue
@@ -64,6 +69,7 @@ while cap.isOpened():
 
 cv2.destroyAllWindows()
 cap.release()
+conn.close()
 #===========================================================Camera Calibration============================
 
 
@@ -78,14 +84,16 @@ def detect_idx(outputs, REC_center):
         x = int(str(center[0])[2:4])
         y = int(str(center[1])[2:4])
         dist_vector[i] = np.sqrt((x - REC_center[0])**2 + (y - REC_center[1])**2)
+        print(det_output[4])
         # dist_vector[i] = np.sqrt((x - REC_center[0])**2)
     result = np.where(dist_vector == np.amin(dist_vector))
     result = result[0][0]
     idx = outputs[0][result][4]
+    print("========================IDX==========================",idx)
     return idx
 
 
-UDP_IP, UDP_PORT = "127.0.0.1", 8888
+UDP_IP, UDP_PORT = "172.17.222.162", 8888
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
 def send_data(det_output):
@@ -141,6 +149,14 @@ from strong_sort.strong_sort import StrongSORT
 
 # remove duplicated stream handler to avoid duplicated logging
 logging.getLogger().removeHandler(logging.getLogger().handlers[0])
+
+#//////////////////////////////////////////////// REC /////////////////////////////////////////
+# server_socket.bind((host, port))  
+server_socket.listen(1)
+conn, address = server_socket.accept() 
+print("Connection from: " + str(address))
+
+
 
 @torch.no_grad()
 def run(
@@ -247,8 +263,12 @@ def run(
         # if data is not received, breaks
         print("From connected user: " + str(data))
         data = data.strip('][').split(', ')
-        REC_center = (int(data[0])-offset_x , int(data[1])-offset_y)
+        REC_center = (int(float(data[0]))-(offset_x/640)*100 , int(float(data[1]))-(offset_y/480)*100)
         REC_num_targets = int(data[2])
+        print(int(data[0]), type(int(data[0])))
+        print(int(data[1]), type(int(data[1])))
+        print(offset_x, type(offset_x))
+        print(offset_y, type(offset_y))
     #=====================================================REC=============================================================
     for frame_idx, (path, im, im0s, vid_cap, s) in enumerate(dataset):
         t1 = time_sync()
@@ -323,7 +343,7 @@ def run(
                 if len(outputs[0]) == 0:
                     pass 
                 else:
-                    if "REC_num_targets" in locals() and outputs[0].shape[0] == REC_num_targets and match_time == True: #-------------------------------------------------------MOD
+                    if "REC_center" in locals()  and match_time == True: #-------------------------------------------------------MOD
                         track_idx = detect_idx(outputs=outputs, REC_center=REC_center)
                         match_time = False
                 if len(outputs[i]) > 0:
@@ -371,6 +391,10 @@ def run(
             # Stream results
             im0 = annotator.result()
             if show_vid:
+                test1, test2 = int(REC_center[0]*6.4), int(REC_center[1]*4.8)
+                print(test1, type(test1))
+                print(test2, type(test2))
+                # cv2.putText(im0, str((test1, test2)), (test1, test2), cv2.FONT_HERSHEY_COMPLEX, 1, (0,0,0),2,cv2.LINE_AA)
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
 
@@ -391,7 +415,7 @@ def parse_opt():
     parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov5m.pt', help='model.pt path(s)')
     parser.add_argument('--strong-sort-weights', type=str, default=WEIGHTS / 'osnet_x0_25_msmt17.pt')
     parser.add_argument('--config-strongsort', type=str, default='strong_sort/configs/strong_sort.yaml')
-    parser.add_argument('--source', type=str, default='0', help='file/dir/URL/glob, 0 for webcam')  
+    parser.add_argument('--source', type=str, default='1', help='file/dir/URL/glob, 0 for webcam')  
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')

@@ -1,6 +1,5 @@
 import pickle, time, datetime
 from tokenize import Double
-from click_event import click_event
 import socket
 
 import argparse
@@ -43,7 +42,8 @@ from strong_sort.strong_sort import StrongSORT
 # remove duplicated stream handler to avoid duplicated logging
 logging.getLogger().removeHandler(logging.getLogger().handlers[0])
 
-UDP_IP, UDP_PORT = "127.0.0.1", 8888
+# 172.18.226.117
+UDP_IP, UDP_PORT = "172.17.222.162", 8888
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
 
@@ -129,7 +129,7 @@ def run(
     vid_path, vid_writer, txt_path = [None] * nr_sources, [None] * nr_sources, [None] * nr_sources
 
     # Launch the socket server for receiving the feature data==========================================
-    host = "172.18.227.249"
+    host = "172.17.222.161"
     port = 5000
     server_socket = socket.socket()
     server_socket.bind((host, port))
@@ -287,7 +287,7 @@ def run(
             im0 = annotator.result()
             if show_vid:
                 cv2.imshow(str(p), im0)
-                cv2.setMouseCallback(str(p), click_event)
+                # cv2.setMouseCallback(str(p), click_event)
                 cv2.waitKey(1)  # 1 millisecond
 
             # Save results (image with detections)
@@ -323,7 +323,7 @@ def parse_opt():
     parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov5m.pt', help='model.pt path(s)')
     parser.add_argument('--strong-sort-weights', type=str, default=WEIGHTS / 'osnet_x0_25_msmt17.pt')
     parser.add_argument('--config-strongsort', type=str, default='strong_sort/configs/strong_sort.yaml')
-    parser.add_argument('--source', type=str, default='0', help='file/dir/URL/glob, 0 for webcam')  
+    parser.add_argument('--source', type=str, default='1', help='file/dir/URL/glob, 0 for webcam')  
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')

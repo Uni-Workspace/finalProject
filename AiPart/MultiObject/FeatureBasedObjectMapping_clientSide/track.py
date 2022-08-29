@@ -1,6 +1,5 @@
 import pickle, time, datetime
 from tkinter.tix import Select
-from click_event import click_event
 import socket
 
 click_X, click_Y, Selection = None, None, False
